@@ -25,11 +25,6 @@ pipeline {
                         '''
                     }
                 }
-                // Set the build result to ABORTED
-                currentBuild.result = 'ABORTED' 
-                
-                // Stop the pipeline with a clear message
-                error("Pipeline stopped intentionally to check the agent IP.")
             }
         }
 
@@ -104,7 +99,8 @@ EOF
                         chmod 600 $ANSIBLE_SSH_KEY
 
                         # Run Ansible playbook using the injected private key
-                        ansible-playbook -i inventory.ini ${ORACLE_PLAYBOOK} --private-key $ANSIBLE_SSH_KEY -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+                        #you can temporarily disable strict host key checking in Ansible for testing purposes
+                        ansible-playbook -i inventory.ini ${ORACLE_PLAYBOOK} --private-key $ANSIBLE_SSH_KEY --ssh-extra-args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
                         """
                     }
                 }
