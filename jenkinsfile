@@ -20,10 +20,16 @@ pipeline {
                     withCredentials([string(credentialsId: 'TF_API_TOKEN', variable: 'HCP_TOKEN')]) {
                         sh '''
                         export TF_TOKEN_app_terraform_io="$HCP_TOKEN"
+                        echo "Public IP for Jenkin terminal is:  $( curl -s ifconfig.me)"                      
                         terraform init
                         '''
                     }
                 }
+                // Set the build result to ABORTED
+                currentBuild.result = 'ABORTED' 
+                
+                // Stop the pipeline with a clear message
+                error("Pipeline stopped intentionally to check the agent IP.")
             }
         }
 
