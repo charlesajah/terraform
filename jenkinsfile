@@ -104,7 +104,7 @@ EOF
                         chmod 600 $ANSIBLE_SSH_KEY
 
                         # Run Ansible playbook using the injected private key
-                        ansible-playbook -i inventory.ini ${ORACLE_PLAYBOOK} --private-key $ANSIBLE_SSH_KEY
+                        ansible-playbook -i inventory.ini ${ORACLE_PLAYBOOK} --private-key $ANSIBLE_SSH_KEY -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
                         """
                     }
                 }
