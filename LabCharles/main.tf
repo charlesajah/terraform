@@ -147,7 +147,7 @@ resource "azurerm_virtual_machine" "main" {
   os_profile {
     computer_name  = "dev-${count.index + 1}"
     admin_username = "azureuser"
-    admin_password = "Password1234!"
+    #admin_password = "Password1234!"
   }
   os_profile_linux_config {
     disable_password_authentication = true
