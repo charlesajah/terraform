@@ -150,7 +150,12 @@ resource "azurerm_virtual_machine" "main" {
     admin_password = "Password1234!"
   }
   os_profile_linux_config {
-    disable_password_authentication = false
+    disable_password_authentication = true
+    # Add the SSH key block
+    ssh_keys {
+      path     = "/home/azureuser/.ssh/authorized_keys" # Default path for azureuser
+      key_data = file("jenkins_ansible_key.pub")        # <--- Path to your PUBLIC SSH key file
+    }
   }
   tags = {
     environment = "dev"
