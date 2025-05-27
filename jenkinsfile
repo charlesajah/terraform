@@ -1,0 +1,67 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git credentialsId: '0c595440-42f7-4141-8b3a-256edfe455c8', url: 'https://github.com/charlesajah/terraform.git'
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                dir('LabCharles') {
+                    withCredentials([string(credentialsId: 'TF_API_TOKEN', variable: 'HCP_TOKEN')]) { // Use a different variable name to avoid confusion
+                        sh '''
+                        export TF_TOKEN_app_terraform_io="$HCP_TOKEN" # This is the key change
+                        terraform init
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                dir('LabCharles') {
+                    // You might need the token for plan if it accesses remote state or modules
+                    withCredentials([string(credentialsId: 'TF_API_TOKEN', variable: 'HCP_TOKEN')]) {
+                        sh '''
+                        export TF_TOKEN_app_terraform_io="$HCP_TOKEN"
+                        terraform plan -out tfplan.json
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                dir('LabCharles') {
+                    // You might need the token for apply if it accesses remote state or modules
+                    withCredentials([string(credentialsId: 'TF_API_TOKEN', variable: 'HCP_TOKEN')]) {
+                        sh '''
+                        export TF_TOKEN_app_terraform_io="$HCP_TOKEN"
+                        terraform apply -auto-approve
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Terraform Display') {
+            steps {
+                dir('LabCharles') {
+                    // You might need the token for apply if it accesses remote state or modules
+                    withCredentials([string(credentialsId: 'TF_API_TOKEN', variable: 'HCP_TOKEN')]) {
+                        sh '''
+                        export TF_TOKEN_app_terraform_io="$HCP_TOKEN"
+                        echo "The public IP of VM1 is: $(terraform output vm1_public_ip)"
+                         echo "The public IP of VM2 is: $(terraform output vm2_public_ip)"
+                        '''
+                    }
+                }
+            }
+        }
+    }
+}
