@@ -65,6 +65,10 @@ resource "azurerm_network_security_group" "remote_access" {
     source_port_range      = "*"
     destination_port_range = "22"
     #source_address_prefix      = chomp(data.http.my_pub_ip.body)
+    source_address_prefixes = [
+      "81.106.32.169", # My local PC IP address
+      "167.71.137.101" # Jenkins terminal public IP address
+    ]
     source_address_prefix      = "81.106.32.169"
     destination_address_prefix = "*"
   }
