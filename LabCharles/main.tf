@@ -69,7 +69,7 @@ resource "azurerm_network_security_group" "remote_access" {
       "81.106.32.169", # My local PC IP address
       "167.71.137.101" # Jenkins terminal public IP address
     ]
-    source_address_prefix      = "81.106.32.169"
+    #source_address_prefix      = "81.106.32.169"
     destination_address_prefix = "*"
   }
 }
