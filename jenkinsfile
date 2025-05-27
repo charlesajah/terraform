@@ -1,6 +1,12 @@
 pipeline {
     agent any
 
+    environment {
+        TERRAFORM_DIR = 'LabCharles'
+        ANSIBLE_DIR = 'ansible'
+        ORACLE_PLAYBOOK = 'playbooks/oracle_db_setup.yaml'
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -10,10 +16,10 @@ pipeline {
 
         stage('Terraform Init') {
             steps {
-                dir('LabCharles') {
-                    withCredentials([string(credentialsId: 'TF_API_TOKEN', variable: 'HCP_TOKEN')]) { // Use a different variable name to avoid confusion
+                dir("${TERRAFORM_DIR}") {
+                    withCredentials([string(credentialsId: 'TF_API_TOKEN', variable: 'HCP_TOKEN')]) {
                         sh '''
-                        export TF_TOKEN_app_terraform_io="$HCP_TOKEN" # This is the key change
+                        export TF_TOKEN_app_terraform_io="$HCP_TOKEN"
                         terraform init
                         '''
                     }
@@ -23,8 +29,7 @@ pipeline {
 
         stage('Terraform Plan') {
             steps {
-                dir('LabCharles') {
-                    // You might need the token for plan if it accesses remote state or modules
+                dir("${TERRAFORM_DIR}") {
                     withCredentials([string(credentialsId: 'TF_API_TOKEN', variable: 'HCP_TOKEN')]) {
                         sh '''
                         export TF_TOKEN_app_terraform_io="$HCP_TOKEN"
@@ -37,8 +42,7 @@ pipeline {
 
         stage('Terraform Apply') {
             steps {
-                dir('LabCharles') {
-                    // You might need the token for apply if it accesses remote state or modules
+                dir("${TERRAFORM_DIR}") {
                     withCredentials([string(credentialsId: 'TF_API_TOKEN', variable: 'HCP_TOKEN')]) {
                         sh '''
                         export TF_TOKEN_app_terraform_io="$HCP_TOKEN"
@@ -49,16 +53,53 @@ pipeline {
             }
         }
         
-        stage('Terraform Display') {
+        stage('Generate Ansible Inventory') {
             steps {
-                dir('LabCharles') {
-                    // You might need the token for apply if it accesses remote state or modules
-                    withCredentials([string(credentialsId: 'TF_API_TOKEN', variable: 'HCP_TOKEN')]) {
-                        sh '''
-                        export TF_TOKEN_app_terraform_io="$HCP_TOKEN"
-                        echo "The public IP of VM1 is: $(terraform output vm1_public_ip)"
-                         echo "The public IP of VM2 is: $(terraform output vm2_public_ip)"
-                        '''
+                script {
+                    dir("${TERRAFORM_DIR}") {
+                        withCredentials([string(credentialsId: 'TF_API_TOKEN', variable: 'HCP_TOKEN')]) {
+                            sh '''
+                            export TF_TOKEN_app_terraform_io="$HCP_TOKEN"
+
+                            PUBLIC_IP_VM1=$(terraform output -raw vm1_public_ip)
+                            PUBLIC_IP_VM2=$(terraform output -raw vm2_public_ip)
+
+                            echo "-----------------------------------"
+                            echo "VM 1 Public IP: $PUBLIC_IP_VM1"
+                            echo "VM 2 Public IP: $PUBLIC_IP_VM2"
+                            echo "-----------------------------------"
+
+                            mkdir -p ../${ANSIBLE_DIR}
+                            cat > ../${ANSIBLE_DIR}/inventory.ini <<EOF
+[oracle_servers]
+vm1 ansible_host=$PUBLIC_IP_VM1
+vm2 ansible_host=$PUBLIC_IP_VM2
+
+[all:vars]
+ansible_user=azureuser # THIS IS THE CRITICAL PART FOR USERNAME
+ansible_python_interpreter=/usr/bin/python3
+EOF
+                            echo "Ansible inventory.ini created successfully."
+                            cat ../${ANSIBLE_DIR}/inventory.ini
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Run Ansible Playbook') {
+            steps {
+                dir("${ANSIBLE_DIR}") { // Change into the ansible directory
+                    // Configure Jenkins to use the SSH key credential
+                    withCredentials([sshUserPrivateKey(credentialsId: 'VM_SSH_KEY', keyFileVariable: 'ANSIBLE_SSH_KEY')]) {
+                        sh """
+                        # Set correct permissions for the private key file created by Jenkins
+                        chmod 600 $ANSIBLE_SSH_KEY
+
+                        # Run Ansible playbook using the injected private key
+                        ansible-playbook -i inventory.ini ${ORACLE_PLAYBOOK} --private-key $ANSIBLE_SSH_KEY
+                        """
                     }
                 }
             }
