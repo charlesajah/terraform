@@ -1,18 +1,17 @@
 ---
 - name: Test SSH connection and display hostname
-  hosts: oracle_servers # This group comes from your dynamic inventory.ini
-  become: yes           # We'll still use sudo, just in case permissions are tighter
+  hosts: oracle_servers
+  become: yes
 
   tasks:
     - name: Ping the hosts to verify connectivity
-      ansible.builtin.ping
+      ansible.builtin.ping:
 
     - name: Run hostname command and display output
-      ansible.builtin.command: hostname
-      register: hostname_output # Store the command output in a variable
+      ansible.builtin.command:
+        cmd: hostname
+      register: hostname_output
 
-    # A more generic way to display hostname from any host, if you prefer:
     - name: Display hostname for {{ inventory_hostname }}
       ansible.builtin.debug:
         msg: "Hostname of {{ inventory_hostname }}: {{ hostname_output.stdout }}"
-      
