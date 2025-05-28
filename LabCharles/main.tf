@@ -144,7 +144,7 @@ resource "azurerm_virtual_machine" "main" {
     name              = "datadisk-${count.index + 1}"
     lun               = 0
     disk_size_gb      = 128
-    caching           = "None"
+    caching           = "ReadWrite"
     create_option     = "Empty"
     managed_disk_type = "StandardSSD_LRS"
   }
