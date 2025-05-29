@@ -72,6 +72,20 @@ resource "azurerm_network_security_group" "remote_access" {
     #source_address_prefix      = "81.106.32.169"
     destination_address_prefix = "*"
   }
+  security_rule {
+    name                   = "oracle-1521"
+    priority               = 110
+    direction              = "Inbound"
+    access                 = "Allow"
+    protocol               = "Tcp"
+    source_port_range      = "*"
+    destination_port_range = "1521"
+    source_address_prefixes = [
+      "81.106.32.169", # My local PC IP address
+      "167.71.137.101" # Jenkins terminal public IP address
+    ]
+    destination_address_prefix = "*"
+  }
 }
 
 #link NSG with subnet
